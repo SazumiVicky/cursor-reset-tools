@@ -25,6 +25,11 @@ Forget Cursor Student restrictions and country bans! This revolutionary web-base
 - **User-Friendly Interface**: Clean, modern UI with clear instructions
 - **System Information**: Displays detailed system and Cursor installation info
 
+## ✅ Cursor Compatibility
+
+- Fully compatible with **Cursor IDE version 1.2.x**
+- Functionality tested and optimized for this version
+
 ## Installation
 
 1. **Clone the repository**
