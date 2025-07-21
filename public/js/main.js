@@ -30,79 +30,104 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === dm) cm();
   });
   
+  const gp = async () => {
+    const r = await fetch('/api/paths');
+    return await r.json();
+  };
+  
+  const ub = (isRunning) => {
+    rb.disabled = isRunning;
+    bp.disabled = isRunning;
+    du.disabled = isRunning;
+    pc.disabled = isRunning;
+    
+    if (isRunning) {
+      rb.title = "Close Cursor first";
+      bp.title = "Close Cursor first";
+      du.title = "Close Cursor first";
+      pc.title = "Close Cursor first";
+    } else {
+      rb.title = "";
+      bp.title = "";
+      du.title = "";
+      pc.title = "";
+    }
+  };
+  
+  const cc = async () => {
+    try {
+      const p = await gp();
+      if (p.isRunning !== undefined) {
+        ub(p.isRunning);
+        
+        const statusBadge = document.getElementById('cursor-status-badge');
+        if (statusBadge) {
+          statusBadge.className = p.isRunning ? 'badge badge-danger' : 'badge badge-success';
+          statusBadge.textContent = p.isRunning ? 'Running' : 'Not Running';
+        }
+        
+        const warningMsg = document.getElementById('cursor-warning');
+        if (warningMsg) {
+          warningMsg.style.display = p.isRunning ? 'block' : 'none';
+        }
+      }
+    } catch (e) {
+      console.error('Error checking Cursor status:', e);
+    }
+  };
+  
   const gs = async () => {
     try {
-      const response = await fetch('/api/system-info');
-      const data = await response.json();
+      si.innerHTML = '<div class="loading">Loading system information...</div>';
+      cs.innerHTML = '<div class="loading">Checking Cursor status...</div>';
       
-      let systemHtml = '<table>';
-      systemHtml += `<tr><th>Platform</th><td>${data.platform}</td></tr>`;
-      systemHtml += `<tr><th>OS Release</th><td>${data.release}</td></tr>`;
-      systemHtml += `<tr><th>Hostname</th><td>${data.hostname}</td></tr>`;
+      const p = await gp();
       
-      if (data.machineId) {
-        systemHtml += `<tr><th>Current Machine ID</th><td><div class="code-block">${data.machineId}</div></td></tr>`;
-      }
-      
-      systemHtml += `<tr><th>Machine ID Path</th><td><div class="code-block">${data.paths.machineId}</div></td></tr>`;
-      systemHtml += `<tr><th>Storage Path</th><td><div class="code-block">${data.paths.storage}</div></td></tr>`;
-      systemHtml += `<tr><th>SQLite DB Path</th><td><div class="code-block">${data.paths.sqlite}</div></td></tr>`;
+      let systemHtml = '<table class="info-table">';
+      systemHtml += `<tr><th>Platform</th><td>${p.platform || navigator.platform}</td></tr>`;
+      systemHtml += `<tr><th>OS</th><td>${p.osVersion || navigator.userAgent}</td></tr>`;
+      systemHtml += `<tr><th>Architecture</th><td>${p.arch || 'Unknown'}</td></tr>`;
+      systemHtml += `<tr><th>Home Directory</th><td>${p.homedir || 'Unknown'}</td></tr>`;
       systemHtml += '</table>';
       
       si.innerHTML = systemHtml;
       
-      let cursorHtml = '<table>';
-      if (data.cursor && (data.exists.machineId || data.exists.storage || data.exists.sqlite)) {
-        const statusIndicator = data.cursor.isRunning ? 
-          '<span class="status-indicator status-running"></span>Running' : 
-          '<span class="status-indicator status-stopped"></span>Stopped';
-          
-        cursorHtml += `<tr><th>Status</th><td>${statusIndicator}</td></tr>`;
-        cursorHtml += `<tr><th>Path</th><td><div class="code-block">${data.cursor.path}</div></td></tr>`;
-        cursorHtml += `<tr><th>Version</th><td>${data.cursor.version || 'Unknown'}</td></tr>`;
-        
-        cursorHtml += `<tr><th>Machine ID File</th><td>${data.exists.machineId ? 
-          '<span class="status-indicator status-running"></span>Found' : 
-          '<span class="status-indicator status-stopped"></span>Not Found'}</td></tr>`;
-        
-        cursorHtml += `<tr><th>Storage File</th><td>${data.exists.storage ? 
-          '<span class="status-indicator status-running"></span>Found' : 
-          '<span class="status-indicator status-stopped"></span>Not Found'}</td></tr>`;
-          
-        cursorHtml += `<tr><th>SQLite Database</th><td>${data.exists.sqlite ? 
-          '<span class="status-indicator status-running"></span>Found' : 
-          '<span class="status-indicator status-stopped"></span>Not Found'}</td></tr>`;
-      } else {
-        cursorHtml += `<tr><td colspan="2">Cursor is not installed on this system</td></tr>`;
+      let cursorHtml = '<table class="info-table">';
+      cursorHtml += `<tr><th>Cursor Status</th><td><span id="cursor-status-badge" class="${p.isRunning ? 'badge badge-danger' : 'badge badge-success'}">${p.isRunning ? 'Running' : 'Not Running'}</span></td></tr>`;
+      cursorHtml += `<tr><th>Machine ID Path</th><td>${p.machinePath || 'Not found'}</td></tr>`;
+      cursorHtml += `<tr><th>Storage Path</th><td>${p.storagePath || 'Not found'}</td></tr>`;
+      cursorHtml += `<tr><th>Database Path</th><td>${p.dbPath || 'Not found'}</td></tr>`;
+      cursorHtml += `<tr><th>App Path</th><td>${p.appPath || 'Not found'}</td></tr>`;
+      cursorHtml += `<tr><th>Update Path</th><td>${p.updatePath || 'Not found'}</td></tr>`;
+      
+      if (p.exists) {
+        const existsHtml = Object.entries(p.exists).map(([k, v]) => 
+          `<tr><th>${k} Exists</th><td>${v ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-danger">No</span>'}</td></tr>`
+        ).join('');
+        cursorHtml += existsHtml;
       }
+      
       cursorHtml += '</table>';
       
-      if (data.cursor && data.cursor.isRunning) {
-        cursorHtml += `
-          <div class="alert alert-warning">
-            <i class="ri-alert-line"></i>
-            <strong>Warning:</strong> Cursor is currently running. Please close it before using any features.
-          </div>
-        `;
-      }
-      
-      if (!data.exists.machineId && !data.exists.storage && !data.exists.sqlite) {
-        cursorHtml += `
-          <div class="alert alert-warning">
-            <i class="ri-alert-line"></i>
-            <strong>Warning:</strong> Cursor files not found. Make sure Cursor is installed properly.
-          </div>
-        `;
-      }
+      cursorHtml += `
+        <div id="cursor-warning" class="alert alert-warning mt-3" ${!p.isRunning ? 'style="display:none"' : ''}>
+          <i class="ri-alert-line"></i>
+          <strong>Warning:</strong> Cursor is currently running. Please close it before using any features.
+        </div>
+        
+        <div class="alert alert-info mt-3">
+          <i class="ri-information-line"></i>
+          <strong>Note:</strong> Make sure Cursor is closed before using any features.
+        </div>
+      `;
       
       cs.innerHTML = cursorHtml;
       
-      rb.disabled = !data.exists.machineId || (data.cursor && data.cursor.isRunning);
-      bp.disabled = !data.exists.sqlite || (data.cursor && data.cursor.isRunning);
-      du.disabled = !data.exists.storage || (data.cursor && data.cursor.isRunning);
-      pc.disabled = !data.exists.sqlite || (data.cursor && data.cursor.isRunning);
+      ub(p.isRunning);
       
       setTimeout(cb, 100);
+      
+      setInterval(cc, 5000);
     } catch (error) {
       si.innerHTML = `<div class="error"><i class="ri-error-warning-line"></i>Error: ${error.message}</div>`;
       cs.innerHTML = `<div class="error"><i class="ri-error-warning-line"></i>Error: ${error.message}</div>`;
@@ -121,6 +146,12 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const rm = async () => {
     try {
+      const p = await gp();
+      if (p.isRunning) {
+        showToast("Please close Cursor before resetting machine ID", "warning");
+        return;
+      }
+      
       rb.disabled = true;
       rr.innerHTML = `
         <div class="processing">
@@ -128,8 +159,8 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
       
-      const response = await fetch('/api/reset-machine-id', {
-        method: 'POST',
+      const response = await fetch('/api/reset', {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json'
         }
@@ -140,16 +171,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (result.success) {
         rr.innerHTML = `
           <div class="success">
-            <p><i class="ri-check-line"></i><strong>Success!</strong> Machine ID has been reset to: ${result.newId || 'New ID'}</p>
-            ${result.logs ? `<pre class="log-output">${result.logs}</pre>` : ''}
+            <p><i class="ri-check-line"></i><strong>Success!</strong> Machine ID has been reset.</p>
+            ${result.log ? `<pre class="log-output">${result.log}</pre>` : ''}
           </div>
         `;
       } else {
         rr.innerHTML = `
           <div class="error">
             <p><i class="ri-error-warning-line"></i><strong>Failed to reset machine ID</strong></p>
-            <p>Error: ${result.message || 'Unknown error'}</p>
-            ${result.logs ? `<pre class="log-output">${result.logs}</pre>` : ''}
+            <p>Error: ${result.error || 'Unknown error'}</p>
           </div>
         `;
       }
@@ -165,6 +195,12 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const bk = async () => {
     try {
+      const p = await gp();
+      if (p.isRunning) {
+        showToast("Please close Cursor before bypassing token limit", "warning");
+        return;
+      }
+      
       bp.disabled = true;
       rr.innerHTML = `
         <div class="processing">
@@ -172,8 +208,8 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
       
-      const response = await fetch('/api/reset-token-limit', {
-        method: 'POST',
+      const response = await fetch('/api/patch?action=bypass', {
+        method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });
       
@@ -182,21 +218,21 @@ document.addEventListener('DOMContentLoaded', () => {
       if (result.success) {
         rr.innerHTML = `
           <div class="success">
-            <p><i class="ri-check-line"></i><strong>Success!</strong> Token limit has been reset.</p>
-            ${result.logs ? `<pre class="log-output">${result.logs}</pre>` : ''}
+            <p><i class="ri-check-line"></i><strong>Success!</strong> Token limit has been bypassed.</p>
+            ${result.log ? `<pre class="log-output">${result.log}</pre>` : ''}
           </div>
         `;
       } else {
         rr.innerHTML = `
           <div class="error">
-            <p><i class="ri-error-warning-line"></i><strong>Failed to reset token limit</strong></p>
-            <p>Error: ${result.message || 'Unknown error'}</p>
-            ${result.logs ? `<pre class="log-output">${result.logs}</pre>` : ''}
+            <p><i class="ri-error-warning-line"></i><strong>Failed to bypass token limit</strong></p>
+            <p>Error: ${result.error || 'Unknown error'}</p>
           </div>
         `;
       }
       
       await gs();
+      setTimeout(cb, 100);
     } catch (error) {
       rr.innerHTML = `<div class="error"><i class="ri-error-warning-line"></i>Error: ${error.message}</div>`;
     } finally {
@@ -206,6 +242,12 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const dz = async () => {
     try {
+      const p = await gp();
+      if (p.isRunning) {
+        showToast("Please close Cursor before disabling auto-update", "warning");
+        return;
+      }
+      
       du.disabled = true;
       rr.innerHTML = `
         <div class="processing">
@@ -213,8 +255,8 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
       
-      const response = await fetch('/api/disable-updates', {
-        method: 'POST',
+      const response = await fetch('/api/patch?action=disable', {
+        method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });
       
@@ -224,20 +266,20 @@ document.addEventListener('DOMContentLoaded', () => {
         rr.innerHTML = `
           <div class="success">
             <p><i class="ri-check-line"></i><strong>Success!</strong> Auto-update has been disabled.</p>
-            ${result.logs ? `<pre class="log-output">${result.logs}</pre>` : ''}
+            ${result.log ? `<pre class="log-output">${result.log}</pre>` : ''}
           </div>
         `;
       } else {
         rr.innerHTML = `
           <div class="error">
             <p><i class="ri-error-warning-line"></i><strong>Failed to disable auto-update</strong></p>
-            <p>Error: ${result.message || 'Unknown error'}</p>
-            ${result.logs ? `<pre class="log-output">${result.logs}</pre>` : ''}
+            <p>Error: ${result.error || 'Unknown error'}</p>
           </div>
         `;
       }
       
       await gs();
+      setTimeout(cb, 100);
     } catch (error) {
       rr.innerHTML = `<div class="error"><i class="ri-error-warning-line"></i>Error: ${error.message}</div>`;
     } finally {
@@ -247,15 +289,21 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const pt = async () => {
     try {
+      const p = await gp();
+      if (p.isRunning) {
+        showToast("Please close Cursor before enabling Pro features", "warning");
+        return;
+      }
+      
       pc.disabled = true;
       rr.innerHTML = `
         <div class="processing">
-          <p><i class="ri-loader-2-line ri-spin"></i>Converting to Pro... Please wait</p>
+          <p><i class="ri-loader-2-line ri-spin"></i>Converting to Pro + Custom UI... Please wait</p>
         </div>
       `;
       
-      const response = await fetch('/api/enable-pro', {
-        method: 'POST',
+      const response = await fetch('/api/patch?action=pro', {
+        method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });
       
@@ -264,21 +312,21 @@ document.addEventListener('DOMContentLoaded', () => {
       if (result.success) {
         rr.innerHTML = `
           <div class="success">
-            <p><i class="ri-check-line"></i><strong>Success!</strong> Pro features have been enabled.</p>
-            ${result.logs ? `<pre class="log-output">${result.logs}</pre>` : ''}
+            <p><i class="ri-check-line"></i><strong>Success!</strong> Pro features and custom UI have been enabled.</p>
+            ${result.log ? `<pre class="log-output">${result.log}</pre>` : ''}
           </div>
         `;
       } else {
         rr.innerHTML = `
           <div class="error">
             <p><i class="ri-error-warning-line"></i><strong>Failed to enable Pro features</strong></p>
-            <p>Error: ${result.message || 'Unknown error'}</p>
-            ${result.logs ? `<pre class="log-output">${result.logs}</pre>` : ''}
+            <p>Error: ${result.error || 'Unknown error'}</p>
           </div>
         `;
       }
       
       await gs();
+      setTimeout(cb, 100);
     } catch (error) {
       rr.innerHTML = `<div class="error"><i class="ri-error-warning-line"></i>Error: ${error.message}</div>`;
     } finally {
