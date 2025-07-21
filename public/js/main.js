@@ -87,18 +87,18 @@ document.addEventListener('DOMContentLoaded', () => {
       systemHtml += `<tr><th>Platform</th><td>${p.platform || navigator.platform}</td></tr>`;
       systemHtml += `<tr><th>OS</th><td>${p.osVersion || navigator.userAgent}</td></tr>`;
       systemHtml += `<tr><th>Architecture</th><td>${p.arch || 'Unknown'}</td></tr>`;
-      systemHtml += `<tr><th>Home Directory</th><td>${p.homedir || 'Unknown'}</td></tr>`;
+      systemHtml += `<tr><th>Home Directory</th><td><div class='code-block'>${p.homedir || 'Unknown'}</div></td></tr>`;
       systemHtml += '</table>';
       
       si.innerHTML = systemHtml;
       
       let cursorHtml = '<table class="info-table">';
-      cursorHtml += `<tr><th>Cursor Status</th><td><span id="cursor-status-badge" class="${p.isRunning ? 'badge badge-danger' : 'badge badge-success'}">${p.isRunning ? 'Running' : 'Not Running'}</span></td></tr>`;
-      cursorHtml += `<tr><th>Machine ID Path</th><td>${p.machinePath || 'Not found'}</td></tr>`;
-      cursorHtml += `<tr><th>Storage Path</th><td>${p.storagePath || 'Not found'}</td></tr>`;
-      cursorHtml += `<tr><th>Database Path</th><td>${p.dbPath || 'Not found'}</td></tr>`;
-      cursorHtml += `<tr><th>App Path</th><td>${p.appPath || 'Not found'}</td></tr>`;
-      cursorHtml += `<tr><th>Update Path</th><td>${p.updatePath || 'Not found'}</td></tr>`;
+      cursorHtml += `<tr><th>Cursor Status</th><td><div class="code-block" id="code-block" class="${p.isRunning ? 'badge badge-danger' : 'badge badge-success'}">${p.isRunning ? 'Running' : 'Not Running'}</div></td></tr>`;
+      cursorHtml += `<tr><th>Machine ID Path</th><td><div class='code-block'>${p.machinePath || 'Not found'}</div></td></tr>`;
+      cursorHtml += `<tr><th>Storage Path</th><td><div class='code-block'>${p.storagePath || 'Not found'}</div></td></tr>`;
+      cursorHtml += `<tr><th>Database Path</th><td><div class='code-block'>${p.dbPath || 'Not found'}</div></td></tr>`;
+      cursorHtml += `<tr><th>App Path</th><td><div class='code-block'>${p.appPath || 'Not found'}</div></td></tr>`;
+      cursorHtml += `<tr><th>Update Path</th><td><div class='code-block'>${p.updatePath || 'Not found'}</div></td></tr>`;
       
       if (p.exists) {
         const existsHtml = Object.entries(p.exists).map(([k, v]) => 
